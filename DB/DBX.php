@@ -16,8 +16,8 @@ use PDO;
 
 class DBX
 {
-    protected static PDO $data;
-    protected static PDO $xql;
+    protected static ?PDO $data = null;
+    protected static ?PDO $xql = null;
 
     protected static array $searchables = [];
 
@@ -36,7 +36,8 @@ class DBX
 
     public static function resetConnections(): void
     {
-        unset(self::$xql, self::$data);
+        self::$xql = null;
+        self::$data = null;
     }
 
     public static function validateConfig(): array
@@ -984,10 +985,10 @@ class DBX
         }
         return [$query, $values];
     }
-    
+
     protected static function connect()
     {
-        if(!isset(self::$data) || !isset(self::$xql)) {
+        if(self::$data === null || self::$xql === null) {
             $xqlDriver = Env::get("XQL_DB_DRIVER");
             if($xqlDriver == "mysql" || $xqlDriver == "mariadb") {
                 self::$xql = self::mysql(
@@ -995,7 +996,8 @@ class DBX
                     Env::get("XQL_DB_PORT"),
                     Env::get("XQL_DB_DATABASE"),
                     Env::get("XQL_DB_USERNAME"),
-                    Env::get("XQL_DB_PASSWORD"));
+                    Env::get("XQL_DB_PASSWORD"),
+                    "XQL_DB");
             }
 
             $dataDriver = Env::get("XQL_BINDED_DB_DRIVER");
@@ -1005,16 +1007,43 @@ class DBX
                     Env::get("XQL_BINDED_DB_PORT"),
                     Env::get("XQL_BINDED_DB_DATABASE"),
                     Env::get("XQL_BINDED_DB_USERNAME"),
-                    Env::get("XQL_BINDED_DB_PASSWORD"));
+                    Env::get("XQL_BINDED_DB_PASSWORD"),
+                    "XQL_BINDED_DB");
             }
         }
     }
 
-    protected static function mysql($host, $port, $database, $username, $password): PDO
+    protected static function mysql($host, $port, $database, $username, $password, string $prefix = "XQL_DB"): PDO
     {
-        $con = new PDO("mysql:host=$host;port=$port;dbname=$database", $username, $password);
+        $options = self::mysqlOptions($prefix);
+        $con = new PDO("mysql:host=$host;port=$port;dbname=$database", $username, $password, $options);
         $con->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $con;
     }
-    
+
+    protected static function mysqlOptions(string $prefix): array
+    {
+        $options = [];
+
+        $map = [
+            'MYSQL_ATTR_SSL_CA' => Env::get($prefix . "_SSL_CA"),
+            'MYSQL_ATTR_SSL_CERT' => Env::get($prefix . "_SSL_CERT"),
+            'MYSQL_ATTR_SSL_KEY' => Env::get($prefix . "_SSL_KEY"),
+        ];
+
+        foreach($map as $constant => $value) {
+            $constantName = "PDO::" . $constant;
+            if($value && defined($constantName)) {
+                $options[constant($constantName)] = $value;
+            }
+        }
+
+        $verify = Env::get($prefix . "_SSL_VERIFY_SERVER_CERT");
+        if($verify !== null && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+            $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = filter_var($verify, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        return $options;
+    }
+
 }

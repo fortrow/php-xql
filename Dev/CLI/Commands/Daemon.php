@@ -39,6 +39,18 @@ class Daemon extends Command
             'limit' => isset($params['limit']) ? (int) $params['limit'] : 100,
             'binlog_file' => $params['binlog-file'] ?? null,
             'binlog_position' => $params['binlog-position'] ?? null,
+            'binlog_provider' => $params['binlog-provider'] ?? null,
+            'binlog_host' => $params['binlog-host'] ?? null,
+            'binlog_port' => $params['binlog-port'] ?? null,
+            'binlog_database' => $params['binlog-database'] ?? null,
+            'binlog_username' => $params['binlog-username'] ?? null,
+            'binlog_password' => $params['binlog-password'] ?? null,
+            'binlog_server_id' => $params['binlog-server-id'] ?? null,
+            'binlog_socket' => $params['binlog-socket'] ?? null,
+            'binlog_ssl_mode' => $params['binlog-ssl-mode'] ?? null,
+            'binlog_ssl_ca' => $params['binlog-ssl-ca'] ?? null,
+            'binlog_ssl_cert' => $params['binlog-ssl-cert'] ?? null,
+            'binlog_ssl_key' => $params['binlog-ssl-key'] ?? null,
             'health_log_interval' => isset($params['health-log-interval']) ? (int) $params['health-log-interval'] : 300,
         ]);
 

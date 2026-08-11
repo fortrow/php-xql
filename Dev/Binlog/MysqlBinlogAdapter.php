@@ -100,12 +100,15 @@ class MysqlBinlogAdapter implements BinlogAdapter
     private function command(array $options): array
     {
         $binary = Env::get("XQL_BINLOG_MYSQLBINLOG") ?: "mysqlbinlog";
-        $host = Env::get("XQL_BINDED_DB_HOST");
-        $port = Env::get("XQL_BINDED_DB_PORT") ?: "3306";
-        $user = Env::get("XQL_BINLOG_USERNAME") ?: Env::get("XQL_BINDED_DB_USERNAME");
-        $password = Env::get("XQL_BINLOG_PASSWORD") ?: Env::get("XQL_BINDED_DB_PASSWORD");
-        $database = Env::get("XQL_BINDED_DB_DATABASE");
-        $checkpoint = DBX::binlogCheckpoint();
+        $provider = $this->provider($options);
+        $host = $options['binlog_host'] ?? Env::get("XQL_BINLOG_HOST") ?: Env::get("XQL_BINDED_DB_HOST");
+        $port = $options['binlog_port'] ?? Env::get("XQL_BINLOG_PORT") ?: Env::get("XQL_BINDED_DB_PORT") ?: "3306";
+        $user = $options['binlog_username'] ?? Env::get("XQL_BINLOG_USERNAME") ?: Env::get("XQL_BINDED_DB_USERNAME");
+        $password = $options['binlog_password'] ?? Env::get("XQL_BINLOG_PASSWORD") ?: Env::get("XQL_BINDED_DB_PASSWORD");
+        $database = $options['binlog_database'] ?? Env::get("XQL_BINLOG_DATABASE") ?: Env::get("XQL_BINDED_DB_DATABASE");
+        $checkpoint = DBX::binlogCheckpoint($host, $database);
+
+        $this->validateConnectionConfig($provider, $host, $user, $database);
 
         $file = $options['binlog_file'] ?? $checkpoint['binlog_file'] ?? Env::get("XQL_BINLOG_FILE");
         if(!$file) {
@@ -125,6 +128,8 @@ class MysqlBinlogAdapter implements BinlogAdapter
             "--database=" . escapeshellarg($database),
         ];
 
+        $parts = array_merge($parts, $this->providerOptions($provider, $options));
+
         if($position) {
             $parts[] = "--start-position=" . escapeshellarg((string) $position);
         }
@@ -140,9 +145,71 @@ class MysqlBinlogAdapter implements BinlogAdapter
         ]), [
             'source_host' => $host,
             'source_database' => $database,
+            'source_provider' => $provider,
             'binlog_file' => $file,
             'start_position' => $position,
         ]];
+    }
+
+    private function provider(array $options = []): string
+    {
+        $provider = strtolower((string) ($options['binlog_provider'] ?? Env::get("XQL_BINLOG_PROVIDER") ?: Env::get("XQL_DB_PROVIDER") ?: "self-hosted"));
+        return match($provider) {
+            "self", "self-hosted", "self_hosted", "vps", "mysql", "mariadb" => "self-hosted",
+            "aws", "rds", "aurora", "amazon" => "aws",
+            "azure", "azure-mysql", "azure_mysql", "flexible-server", "flexible_server" => "azure",
+            "gcp", "google", "cloud-sql", "cloud_sql", "google-cloud-sql" => "gcp",
+            default => throw new \RuntimeException("Unsupported XQL binlog provider: " . $provider),
+        };
+    }
+
+    private function validateConnectionConfig(string $provider, ?string $host, ?string $user, ?string $database): void
+    {
+        $missing = [];
+        if(!$host) $missing[] = "XQL_BINLOG_HOST or XQL_BINDED_DB_HOST";
+        if(!$user) $missing[] = "XQL_BINLOG_USERNAME or XQL_BINDED_DB_USERNAME";
+        if(!$database) $missing[] = "XQL_BINLOG_DATABASE or XQL_BINDED_DB_DATABASE";
+
+        if(count($missing) > 0) {
+            throw new \RuntimeException("Missing XQL " . $provider . " binlog configuration: " . implode(", ", $missing) . ".");
+        }
+    }
+
+    private function providerOptions(string $provider, array $options = []): array
+    {
+        $parts = [];
+
+        $serverId = $options['binlog_server_id'] ?? Env::get("XQL_BINLOG_SERVER_ID");
+        if($serverId) {
+            $parts[] = "--connection-server-id=" . escapeshellarg((string) $serverId);
+        }
+
+        $socket = $options['binlog_socket'] ?? Env::get("XQL_BINLOG_SOCKET");
+        if($provider === "self-hosted" && $socket) {
+            $parts[] = "--socket=" . escapeshellarg($socket);
+        }
+
+        foreach($this->sslOptions($provider, $options) as $option => $value) {
+            if($value === null || $value === "") continue;
+            $parts[] = $option . "=" . escapeshellarg((string) $value);
+        }
+
+        return $parts;
+    }
+
+    private function sslOptions(string $provider, array $options = []): array
+    {
+        $mode = $options['binlog_ssl_mode'] ?? Env::get("XQL_BINLOG_SSL_MODE");
+        if(!$mode && in_array($provider, ["azure", "gcp"], true)) {
+            $mode = "REQUIRED";
+        }
+
+        return [
+            "--ssl-mode" => $mode,
+            "--ssl-ca" => $options['binlog_ssl_ca'] ?? Env::get("XQL_BINLOG_SSL_CA"),
+            "--ssl-cert" => $options['binlog_ssl_cert'] ?? Env::get("XQL_BINLOG_SSL_CERT"),
+            "--ssl-key" => $options['binlog_ssl_key'] ?? Env::get("XQL_BINLOG_SSL_KEY"),
+        ];
     }
 
     private function parseLine(string $line, ?array &$event, array $source): ?array
@@ -162,7 +229,7 @@ class MysqlBinlogAdapter implements BinlogAdapter
         if(preg_match('/^### (INSERT INTO|UPDATE|DELETE FROM) `[^`]+`\.`([^`]+)`/', $line, $match)) {
             $completed = null;
             if($event && (count($event['before']) > 0 || count($event['after']) > 0)) {
-                $completed = $this->finalizeEvent($event);
+                $completed = $this->finalizeEvent($event, $source);
             }
 
             $event = [

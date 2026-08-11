@@ -103,6 +103,10 @@ XQL_DB_PORT=3306
 XQL_DB_USERNAME=
 XQL_DB_PASSWORD=
 XQL_DB_DATABASE=xql
+XQL_DB_SSL_CA=
+XQL_DB_SSL_CERT=
+XQL_DB_SSL_KEY=
+XQL_DB_SSL_VERIFY_SERVER_CERT=
 
 XQL_BINDED_DB_DRIVER=mariadb
 XQL_BINDED_DB_HOST=127.0.0.1
@@ -110,6 +114,10 @@ XQL_BINDED_DB_PORT=3306
 XQL_BINDED_DB_USERNAME=
 XQL_BINDED_DB_PASSWORD=
 XQL_BINDED_DB_DATABASE=app
+XQL_BINDED_DB_SSL_CA=
+XQL_BINDED_DB_SSL_CERT=
+XQL_BINDED_DB_SSL_KEY=
+XQL_BINDED_DB_SSL_VERIFY_SERVER_CERT=
 ```
 
 The watched database must provide:
@@ -125,11 +133,22 @@ The watched database must provide:
 Windsor uses `mysqlbinlog` or `mariadb-binlog` to stream row changes and convert them into XQL jobs.
 
 ```env
+# Supported values: self-hosted, aws, azure, gcp
+XQL_BINLOG_PROVIDER=self-hosted
 XQL_BINLOG_MYSQLBINLOG=mysqlbinlog
+XQL_BINLOG_HOST="${XQL_BINDED_DB_HOST}"
+XQL_BINLOG_PORT="${XQL_BINDED_DB_PORT}"
+XQL_BINLOG_DATABASE="${XQL_BINDED_DB_DATABASE}"
 XQL_BINLOG_USERNAME="${XQL_BINDED_DB_USERNAME}"
 XQL_BINLOG_PASSWORD="${XQL_BINDED_DB_PASSWORD}"
 XQL_BINLOG_FILE=
 XQL_BINLOG_POSITION=
+XQL_BINLOG_SERVER_ID=
+XQL_BINLOG_SOCKET=
+XQL_BINLOG_SSL_MODE=
+XQL_BINLOG_SSL_CA=
+XQL_BINLOG_SSL_CERT=
+XQL_BINLOG_SSL_KEY=
 ```
 
 If `XQL_BINLOG_FILE` and `XQL_BINLOG_POSITION` are empty, Windsor resumes from the latest checkpoint saved in the XQL metadata database. For first boot, provide the current binlog file and position or seed a checkpoint before starting the daemon.
@@ -162,9 +181,12 @@ FLUSH PRIVILEGES;
 Then configure Windsor with the RDS/Aurora endpoint:
 
 ```env
+XQL_BINLOG_PROVIDER=aws
 XQL_BINDED_DB_HOST=my-db.cluster-xxxxxxxxxxxx.us-east-2.rds.amazonaws.com
+XQL_BINLOG_HOST=my-db.cluster-xxxxxxxxxxxx.us-east-2.rds.amazonaws.com
 XQL_BINLOG_USERNAME=xql_binlog
 XQL_BINLOG_PASSWORD=change-me
+XQL_BINLOG_SSL_MODE=REQUIRED
 ```
 
 ### Self-hosted VPS MySQL/MariaDB
@@ -196,7 +218,7 @@ GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'xql_binlog'@'%';
 FLUSH PRIVILEGES;
 ```
 
-When Windsor runs locally on the database host, `XQL_BINDED_DB_HOST=127.0.0.1` is acceptable. For remote Windsor hosts, bind MySQL to a private interface, require TLS where appropriate, and firewall port `3306` to only the Windsor host.
+When Windsor runs locally on the database host, `XQL_BINDED_DB_HOST=127.0.0.1` is acceptable. For local socket access, set `XQL_BINLOG_SOCKET=/var/run/mysqld/mysqld.sock`. For remote Windsor hosts, bind MySQL to a private interface, require TLS where appropriate, and firewall port `3306` to only the Windsor host.
 
 ### Azure Database for MySQL Flexible Server
 
@@ -205,9 +227,12 @@ Use Azure Database for MySQL Flexible Server. Azure Flexible Server keeps binary
 Recommended settings:
 
 ```env
+XQL_BINLOG_PROVIDER=azure
 XQL_BINDED_DB_HOST=my-server.mysql.database.azure.com
 XQL_BINDED_DB_PORT=3306
+XQL_BINLOG_HOST=my-server.mysql.database.azure.com
 XQL_BINLOG_MYSQLBINLOG=mysqlbinlog
+XQL_BINLOG_SSL_MODE=REQUIRED
 ```
 
 Create a database user for Windsor with replication/binlog permissions according to the access model available on the Azure server. Network access should be private endpoint or firewall-limited to the Windsor host.
@@ -225,9 +250,12 @@ gcloud sql instances patch INSTANCE_NAME --enable-bin-log --retained-transaction
 Configure Windsor with the Cloud SQL private IP, public IP, or connector/proxy endpoint used by your deployment:
 
 ```env
+XQL_BINLOG_PROVIDER=gcp
 XQL_BINDED_DB_HOST=10.0.0.10
 XQL_BINDED_DB_PORT=3306
+XQL_BINLOG_HOST=10.0.0.10
 XQL_BINLOG_MYSQLBINLOG=mysqlbinlog
+XQL_BINLOG_SSL_MODE=REQUIRED
 ```
 
 Use private IP or the Cloud SQL Auth Proxy/connector where possible. The binlog user must be able to read binary logs and table metadata.
@@ -256,6 +284,19 @@ After the first checkpoint is saved, Windsor can restart without explicit file a
 
 ```bash
 vendor/bin/windsor daemon --binlog
+```
+
+Provider and connection settings can also be passed as CLI overrides for one-off runs:
+
+```bash
+vendor/bin/windsor daemon --binlog \
+  --binlog-provider=azure \
+  --binlog-host=my-server.mysql.database.azure.com \
+  --binlog-database=app \
+  --binlog-username=xql_binlog \
+  --binlog-ssl-mode=REQUIRED \
+  --binlog-file=mysql-bin.000001 \
+  --binlog-position=4
 ```
 
 The generated systemd unit uses the same behavior and resumes from the saved XQL checkpoint:
