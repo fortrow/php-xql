@@ -1,0 +1,43 @@
+{
+    "name": "fortrow/xql",
+    "description": "Fortrow XQL XML persistence, schema sync, and binlog daemon tooling.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "aws/aws-sdk-php": "^3.311",
+        "doctrine/inflector": "^2.0",
+        "minicli/minicli": "^3.2",
+        "symfony/mailer": "^7.4 || ^8.0",
+        "symfony/mime": "^7.4 || ^8.0",
+        "vlucas/phpdotenv": "^5.6",
+        "google/cloud-storage": "^1.48"
+    },
+    "autoload": {
+        "psr-4": {
+            "XQL\\": "./",
+            "App\\XQL\\": "./"
+        }
+    },
+    "bin": [
+        "bin/windsor"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Fortrow, LLC",
+            "homepage": "https://fortrow.com"
+        }
+    ],
+    "keywords": [
+        "azure-blob-storage",
+        "binlog",
+        "google-cloud-storage",
+        "persistence",
+        "s3",
+        "schema-sync",
+        "xml",
+        "xql"
+    ]
+}

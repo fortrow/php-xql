@@ -1,0 +1,84 @@
+# Composer dependencies
+/vendor/
+composer.phar
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.enc
+
+# XQL runtime output
+/storage/
+/logs/
+/cache/
+/tmp/
+/temp/
+*.log
+*.pid
+*.pid.lock
+*.checkpoint
+alert-state.json
+windsor.log
+
+# Generated XML/object-store mirrors for local development
+/xql/
+/**/*.xml.tmp
+
+# Test and coverage output
+/coverage/
+.phpunit.cache/
+.phpunit.result.cache
+.pest.cache/
+/.phpunit.cache/
+/.pest.cache/
+
+# Static analysis and quality tool caches
+/.php-cs-fixer.cache
+/.phpstan.cache/
+/.psalm/
+/.phan/
+/.rector/
+/.ecs-cache/
+
+# Build artifacts
+/build/
+/dist/
+/release/
+*.tar
+*.tar.gz
+*.zip
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# IDE/editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Local Docker/dev overrides
+/docker-compose.override.yml
+/.docker/
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Crash dumps and profiling
+*.prof
+*.xhprof
+*.cachegrind
+core
+core.*

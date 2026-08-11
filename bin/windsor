@@ -1,0 +1,31 @@
+#!/usr/bin/php
+<?php
+
+$cwd = realpath(".") ?: getcwd();
+$binDir = __DIR__;
+$candidates = [
+    $cwd . "/vendor/autoload.php",
+    dirname($binDir, 2) . "/vendor/autoload.php",
+    dirname($binDir, 4) . "/autoload.php",
+    dirname($binDir, 5) . "/autoload.php",
+];
+
+$autoload = null;
+foreach($candidates as $candidate) {
+    if(is_file($candidate)) {
+        $autoload = $candidate;
+        break;
+    }
+}
+
+if(!$autoload) {
+    fwrite(STDERR, "Could not find Composer autoload.php for XQL Windsor.\n");
+    exit(1);
+}
+
+require $autoload;
+
+use XQL\Dev\CLI\CommandRegistry;
+
+$projectDir = $cwd;
+CommandRegistry::createApp($argv, $projectDir);
