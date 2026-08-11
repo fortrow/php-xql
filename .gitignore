@@ -80,5 +80,5 @@ Desktop.ini
 *.prof
 *.xhprof
 *.cachegrind
-core
-core.*
+# Core dumps; keep the PHP Core/ source directory tracked.
+/core.*
