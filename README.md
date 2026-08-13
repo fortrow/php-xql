@@ -44,29 +44,11 @@ XQL models can be embedded in a parent XML file or persisted as their own XML fi
 
 Attached models are embedded by default. Embedded models do not create their own object-storage files; their XML is stored inside the parent XML document.
 
-Use embedded models for parent-owned data that is only fetched with the parent:
-
-- race result entries;
-- lap-by-lap scoring history;
-- competitor summaries inside a published result;
-- payout rows inside a result payout file;
-- calculated snapshots that do not need independent lookup.
-
 Embedded data keeps object storage from being overcrowded with files that are never fetched independently.
 
 ### Static models
 
 Call `static()` when a model should persist as its own XML file and be referenced by other XML files.
-
-Use static models for independently addressable or shared data:
-
-- events;
-- sessions;
-- racers;
-- hosts;
-- reusable lineup templates;
-- points systems;
-- any XML instance that multiple documents may reference.
 
 When a static model is attached to another model, the parent should store a reference to the static instance rather than embedding the entire static document.
 
