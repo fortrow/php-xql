@@ -1,5 +1,8 @@
 # XQL
 
+> [!WARNING]
+> Versions earlier than `v0.1.2` had incorrect static/final model behavior and documentation. The earlier semantics were altered and documented incorrectly with AI assistance: `static()` and `final()` were conflated, which could cause models to be persisted or referenced differently than intended. Current documentation defines the corrected behavior: `static()` creates a separate referenced XML file, while `final()` only marks an instance or field as immutable after creation. XQL is still early software, and additional general bugs are being worked through as real integrations exercise the package.
+
 XQL is an XML persistence, schema synchronization, and database-change daemon toolkit for PHP applications.
 
 It stores durable XML model instances in object storage while keeping relational databases focused on simple operational records. XQL model definitions describe how database rows, relationships, computed values, searchable fields, hooks, and schema migrations become long-lived XML documents. The Windsor daemon watches database changes, queues affected model instances, rebuilds XML, and writes the updated files to the configured storage backend.
@@ -32,6 +35,54 @@ Copy `.env.example` from the package root into your project-specific environment
 - A daemon process that can resume from the last saved binlog file and position after restarts.
 - Configurable logging, health reporting, and alert email support.
 - Framework-neutral PHP APIs that can be used from Laravel, Symfony, Slim, custom PHP apps, workers, or CLIs.
+
+## Model persistence semantics
+
+XQL models can be embedded in a parent XML file or persisted as their own XML file. The difference matters for storage cost, lookup behavior, and long-term data ownership.
+
+### Embedded models
+
+Attached models are embedded by default. Embedded models do not create their own object-storage files; their XML is stored inside the parent XML document.
+
+Use embedded models for parent-owned data that is only fetched with the parent:
+
+- race result entries;
+- lap-by-lap scoring history;
+- competitor summaries inside a published result;
+- payout rows inside a result payout file;
+- calculated snapshots that do not need independent lookup.
+
+Embedded data keeps object storage from being overcrowded with files that are never fetched independently.
+
+### Static models
+
+Call `static()` when a model should persist as its own XML file and be referenced by other XML files.
+
+Use static models for independently addressable or shared data:
+
+- events;
+- sessions;
+- racers;
+- hosts;
+- reusable lineup templates;
+- points systems;
+- any XML instance that multiple documents may reference.
+
+When a static model is attached to another model, the parent should store a reference to the static instance rather than embedding the entire static document.
+
+### Final models
+
+Call `final()` when an XML instance or embedded object must not change after creation.
+
+`final()` does not mean “create a separate file.” It only guards immutability. A final embedded object remains embedded; a final static model remains a separate file because it is static.
+
+Final models should be built from payload data or generated values that represent the reviewed source of truth. Avoid making a final model depend on mutable application database bindings for its durable value.
+
+Good rule of thumb:
+
+- no `static()` = embed in the parent XML;
+- `static()` = create a separately fetchable XML file and reference it from parents;
+- `final()` = do not mutate after creation.
 
 ## Supported object storage
 

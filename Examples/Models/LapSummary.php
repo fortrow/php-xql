@@ -14,7 +14,6 @@ class LapSummary extends XQLModel
 {
     protected function schema(XQLModel $model)
     {
-        $model->static();
         $model->final();
 
         $model->field('laps_completed')->enforced();

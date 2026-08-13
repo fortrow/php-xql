@@ -58,4 +58,9 @@ class XQLField extends XQLObject
         return ($this->multiple && isset($this->values) && count($this->values) > 0) ? $this->values : [$this->value];
     }
 
+    public function fieldName()
+    {
+        return $this->name();
+    }
+
 }

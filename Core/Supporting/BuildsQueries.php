@@ -116,6 +116,10 @@ trait BuildsQueries
                     self::construct($instance, $child, $values[$dKey], $xpath, $dataObject->{$child->name()});
                 } else if($child->getBindType() === XQLBindingType::FUNCTION) {
                     $child->retrieve($instance, $child, []);
+                } else if($child->getBindType() === XQLBindingType::FILE_TO_FILE && $dArr->exists($child->name() . '_id')) {
+                    $dKey = $dArr->find($child->name() . '_id');
+                    $dataObject->{$child->name()} = (object)[];
+                    $child->retrieve($instance, $child, ['id' => $values[$dKey]]);
                 } else if ($child->isEnforced()) {
                     throw new Exception($child->name() . " binding values are required.");
                 }

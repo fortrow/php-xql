@@ -35,15 +35,18 @@ class XQLBinding extends XQLObject
         if ($from instanceof XQLModel && isset($to)) {
             $type = XQLBindingType::FILE_TO_FILE;
             $fromName = $from->name();
+            $bindedModel = $from;
         } else if($from instanceof XQLModel) {
             $type = XQLBindingType::FILE_TO_DB;
             $fromName = $from->name();
+            $bindedModel = $to;
         } else {
             $type = XQLBindingType::DB_TO_FILE;
             $fromName = $from;
+            $bindedModel = $to;
         }
         //DBX::relationship();
-        return new XQLBinding($name, $fromName, $references, $type, $to);
+        return new XQLBinding($name, $fromName, $references, $type, $bindedModel);
     }
 
     public static function await(string $name, XQLModel $from, array $args, $fn): XQLBinding
@@ -142,11 +145,22 @@ class XQLBinding extends XQLObject
         try {
             $targetInstance = $targetClass::fetch($id);
             if ($targetInstance) {
-                $this->objects[] = $targetInstance;
+                if ($targetInstance->isStatic()) {
+                    $this->appendReferenceFields($targetInstance);
+                } else {
+                    $this->objects[] = $targetInstance;
+                }
             }
         } catch (\Exception $e) {
             // Handle or ignore if not found
         }
+    }
+
+    private function appendReferenceFields(XQLModel $targetInstance): void
+    {
+        $this->appendChild(new XQLField($targetInstance->modelKey(), 'xql_model'));
+        $this->appendChild(new XQLField($targetInstance->id(), 'xql_id'));
+        $this->appendChild(new XQLField($targetInstance->path(), 'xql_path'));
     }
 
     public function parse(array $input, &$dataObject)

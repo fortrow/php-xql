@@ -79,7 +79,7 @@ class RuntimeUsage
             ],
             'competitor_results' => [
                 [
-                    'ids' => [
+                    'identity' => [
                         'competitor_id' => 'competitor_1',
                         'transponder_id' => 'TX-100',
                         'racer_id' => 'racer_1',

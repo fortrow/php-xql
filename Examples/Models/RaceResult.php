@@ -31,8 +31,12 @@ class RaceResult extends XQLModel
 
         /**
          * Attach immutable event context and a repeated list of competitor results.
-         * These are included in the RaceResult XML and can also have their own files
-         * when the child model is marked static().
+         *
+         * EventSnapshot is static, so the result XML stores a reference to the
+         * event XML file.
+         *
+         * CompetitorResult is not static, so competitor rows are embedded inside
+         * the RaceResult XML and do not create one object-storage file per driver.
          */
         $model->attach(EventSnapshot::class)->enforced();
         $model->attach(CompetitorResult::class)->multiple()->enforced();

@@ -34,7 +34,7 @@ trait GeneratesXML
     {
 
         if(count($child->children()) > 0) {
-            $node = ($child->isMultiple()) ? $parent->addChild($child->groupName()) : $parent;
+            $node = ($child->isMultiple()) ? $parent->addChild($child->fieldName()) : $parent;
             foreach ($child->children() as $next) {
                 if(is_array($next) && count($next) === 1) $next = array_values($next)[0];
                 if ($next instanceof XQLField) {
@@ -45,7 +45,11 @@ trait GeneratesXML
                     }
                 }
                 else if ($next instanceof XQLObject) {
-                    $this->append($next, $node->addChild(($next->isMultiple()) ? $next->groupName() : $next->fieldName()));
+                    if($next->isMultiple()) {
+                        $this->append($next, $node->addChild($next->groupName()));
+                    } else {
+                        $this->append($next, $node->addChild($next->fieldName()));
+                    }
                 }
             }
         } else {

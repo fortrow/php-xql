@@ -7,9 +7,10 @@ use XQL\Core\XQLModel;
 /**
  * EventSnapshot is a static/final child model.
  *
- * static(): this child writes its own XML file and can be referenced by other XML files.
+ * static(): this child writes its own XML file and is referenced by parent XML files.
  * final(): once an instance exists, XQL will refuse to update it. This is useful for
- * immutable historical context, such as event name/date/location at publish time.
+ * immutable historical context created from payload data, such as event
+ * name/date/location at publish time.
  */
 class EventSnapshot extends XQLModel
 {

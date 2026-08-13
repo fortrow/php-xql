@@ -7,20 +7,24 @@ use XQL\Core\XQLModel;
 /**
  * CompetitorResult is a repeated child model on RaceResult.
  *
- * static(): each competitor can keep its own XML instance. This is useful when
- * another model needs to reference a specific competitor result later.
+ * This model is embedded, not static. A competitor's row in a published race
+ * result is only fetched as part of that result, so creating one file per
+ * competitor would waste storage and increase lookup complexity.
+ *
+ * final(): once the race result is published, this embedded row should not be
+ * mutated. Corrections should create a new reviewed result workflow.
  */
 class CompetitorResult extends XQLModel
 {
     protected function schema(XQLModel $model)
     {
-        $model->static();
+        $model->final();
 
         // Groups keep related values together in the XML.
-        $ids = $model->group('ids');
-        $ids->field('competitor_id')->enforced();
-        $ids->field('transponder_id');
-        $ids->field('racer_id');
+        $identity = $model->group('identity');
+        $identity->field('competitor_id')->enforced();
+        $identity->field('transponder_id');
+        $identity->field('racer_id');
 
         // Searchable fields are mirrored into XQL searchable index tables.
         $model->field('number')->enforced()->searchable();

@@ -127,30 +127,29 @@ abstract class XQLModel extends XQLObject {
                     $dKey = $dArrMultiple->find($child->name());
 
                     $vals = get_object_vars((object) $values[$dKey]);
+                    $fieldName = $child->fieldName();
+                    $items = [];
 
-                    if(is_array(array_values($vals)[0])) {
-
-                        $container = new XQLObject($child->groupName(), true);
-                        foreach(array_values($vals)[0] as $value) {
-                            $class = get_class($child);
-                            $model = new $class();
-                            $model->fill($value);
-                            $container->appendChild($model);
-                        }
-
-                        $object->replace($i, $container);
-
+                    if(array_key_exists($fieldName, $vals)) {
+                        $items = is_array($vals[$fieldName]) ? $vals[$fieldName] : [$vals[$fieldName]];
+                    } elseif(count($vals) > 0 && is_array(array_values($vals)[0])) {
+                        $items = array_values($vals)[0];
                     } else {
+                        $items = [$values[$dKey]];
+                    }
 
-                        $container = new XQLObject($child->groupName(), true);
+                    $container = new XQLObject($child->groupName(), true);
+                    foreach($items as $value) {
+                        if($this->isEmptyXmlModelNode($value)) {
+                            continue;
+                        }
                         $class = get_class($child);
                         $model = new $class();
-                        $model->fill($values[$dKey]);
+                        $model->fill($value);
                         $container->appendChild($model);
-
-                        $object->replace($i, $container);
-
                     }
+
+                    $object->replace($i, $container);
 
                 } else if($dArrSingle->exists($child->name())) {
 
@@ -181,6 +180,42 @@ abstract class XQLModel extends XQLObject {
 
         }
 
+    }
+
+    private function isEmptyXmlModelNode(mixed $value): bool
+    {
+        if(!$value instanceof SimpleXMLElement) {
+            return false;
+        }
+
+        $children = get_object_vars($value->children());
+        if($children === []) {
+            return trim((string) $value) === '';
+        }
+
+        foreach($children as $child) {
+            if($child instanceof SimpleXMLElement) {
+                if(!$this->isEmptyXmlModelNode($child)) {
+                    return false;
+                }
+                continue;
+            }
+
+            if(is_array($child)) {
+                foreach($child as $item) {
+                    if(!$this->isEmptyXmlModelNode($item)) {
+                        return false;
+                    }
+                }
+                continue;
+            }
+
+            if(trim((string) $child) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function export(): string
@@ -244,7 +279,13 @@ abstract class XQLModel extends XQLObject {
                     }
                 }
 
-            } else {
+            } else if($object instanceof XQLField) {
+                $val = $object->value();
+
+                if (is_string($val) || is_numeric($val)) {
+                    return (string) $val;
+                }
+            } else if($object instanceof XQLModel) {
                 return $object->id();
             }
         }
@@ -344,6 +385,11 @@ abstract class XQLModel extends XQLObject {
                 if(is_string($value) || is_numeric($value)) {
                     $info['value'] = (string) $value;
                 }
+            }
+        } else if($object instanceof XQLField) {
+            $value = $object->value();
+            if(is_string($value) || is_numeric($value)) {
+                $info['value'] = (string) $value;
             }
         } else if($object instanceof XQLModel) {
             $info['value'] = $object->id();
