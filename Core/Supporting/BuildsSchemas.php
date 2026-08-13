@@ -36,7 +36,7 @@ trait BuildsSchemas
     protected function bindThis(string $classpath, ?string $name = null): XQLBinding
     {
         $name = (!isset($name)) ? $this->className($classpath) : $name ?? $this->toClass($classpath);
-        $object = XQLBinding::store($name, $classpath, [], $this);
+        $object = XQLBinding::store($name, new $classpath(), [], $this);
         $this->objects[] = $object;
         return $object;
     }
