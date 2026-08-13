@@ -11,6 +11,7 @@ use XQL\Core\Supporting\GeneratesXML;
 use XQL\Core\Types\XQLNamingConvention;
 use XQL\Core\Utils\DynamicArr;
 
+#[\AllowDynamicProperties]
 abstract class XQLModel extends XQLObject {
 
     use BuildsQueries, BuildsModels, GeneratesXML;

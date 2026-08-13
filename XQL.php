@@ -19,6 +19,7 @@ class XQL
     {
         Env::configure($config);
         Cloud::reset();
+        DBX::resetConnections();
     }
 
     public static function useCloudDriver(CloudDriver $driver): void

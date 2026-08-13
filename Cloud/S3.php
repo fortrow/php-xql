@@ -19,6 +19,9 @@ class S3 implements CloudDriver
         $key = Env::get("XQL_AWS_S3_KEY");
         $secret = Env::get("XQL_AWS_S3_SECRET");
         $this->bucket = Env::get("XQL_AWS_S3_BUCKET");
+        if(!$this->bucket) {
+            throw new \RuntimeException("XQL_AWS_S3_BUCKET is required when using the s3 storage driver.");
+        }
 
         $config = [
             'version' => 'latest',
@@ -36,7 +39,7 @@ class S3 implements CloudDriver
 
     }
 
-    public function put(string $key, string $content) {
+    public function put(string $key, string $content): void {
         $this->s3->putObject([
             'Bucket' => $this->bucket,
             'Key' => $key,
@@ -44,7 +47,7 @@ class S3 implements CloudDriver
         ]);
     }
 
-    public function get(string $key) {
+    public function get(string $key): string {
        $res = $this->s3->getObject([
             'Bucket' => $this->bucket,
             'Key' => $key
