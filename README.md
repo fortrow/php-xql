@@ -1,7 +1,7 @@
 # XQL
 
 > [!WARNING]
-> Versions earlier than `v0.1.2` had incorrect static/final model behavior and documentation. The earlier semantics were altered and documented incorrectly with AI assistance: `static()` and `final()` were conflated, which could cause models to be persisted or referenced differently than intended. Current documentation defines the corrected behavior: `static()` creates a separate referenced XML file, while `final()` only marks an instance or field as immutable after creation. XQL is still early software, and additional general bugs are being worked through as real integrations exercise the package.
+> Versions `v0.1.2` and below had incorrect static/final model behavior and documentation. The earlier semantics were altered and documented incorrectly with AI assistance: `static()` and `final()` were conflated, which could cause models to be persisted or referenced differently than intended. Current documentation defines the corrected behavior: `static()` creates a separate referenced XML file, while `final()` only marks an instance or field as immutable after creation. XQL is still early software, and additional general bugs are being worked through as real integrations exercise the package.
 
 XQL is an XML persistence, schema synchronization, and database-change daemon toolkit for PHP applications.
 
